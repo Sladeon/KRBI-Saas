@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Event } from '@/lib/types'
 import {
@@ -14,11 +14,13 @@ interface Props {
   open: boolean
   onClose: () => void
   onAdd: (event: Event) => void
+  onUpdate: (event: Event) => void
   userId: string
   today: string
+  editEvent?: Event | null
 }
 
-export function EventModal({ open, onClose, onAdd, userId, today }: Props) {
+export function EventModal({ open, onClose, onAdd, onUpdate, userId, today, editEvent }: Props) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(today)
   const [time, setTime] = useState('')
@@ -26,16 +28,26 @@ export function EventModal({ open, onClose, onAdd, userId, today }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function reset() {
-    setTitle('')
-    setDate(today)
-    setTime('')
-    setNotes('')
-    setError(null)
-  }
+  const isEditing = !!editEvent
+
+  useEffect(() => {
+    if (open) {
+      if (editEvent) {
+        setTitle(editEvent.title)
+        setDate(editEvent.event_date)
+        setTime(editEvent.event_time?.slice(0, 5) ?? '')
+        setNotes(editEvent.notes ?? '')
+      } else {
+        setTitle('')
+        setDate(today)
+        setTime('')
+        setNotes('')
+      }
+      setError(null)
+    }
+  }, [open, editEvent, today])
 
   function handleClose() {
-    reset()
     onClose()
   }
 
@@ -45,26 +57,47 @@ export function EventModal({ open, onClose, onAdd, userId, today }: Props) {
     setError(null)
 
     const supabase = createClient()
-    const { data, error } = await supabase
-      .from('events')
-      .insert({
-        user_id: userId,
-        title: title.trim(),
-        event_date: date,
-        event_time: time || null,
-        notes: notes.trim() || null,
-      })
-      .select()
-      .single()
 
-    if (error) {
-      setError(error.message)
-      setSaving(false)
-      return
+    if (isEditing) {
+      const { data, error } = await supabase
+        .from('events')
+        .update({
+          title: title.trim(),
+          event_date: date,
+          event_time: time || null,
+          notes: notes.trim() || null,
+        })
+        .eq('id', editEvent!.id)
+        .select()
+        .single()
+
+      if (error) {
+        setError(error.message)
+        setSaving(false)
+        return
+      }
+      onUpdate(data as Event)
+    } else {
+      const { data, error } = await supabase
+        .from('events')
+        .insert({
+          user_id: userId,
+          title: title.trim(),
+          event_date: date,
+          event_time: time || null,
+          notes: notes.trim() || null,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        setError(error.message)
+        setSaving(false)
+        return
+      }
+      onAdd(data as Event)
     }
 
-    onAdd(data as Event)
-    reset()
     onClose()
     setSaving(false)
   }
@@ -73,7 +106,7 @@ export function EventModal({ open, onClose, onAdd, userId, today }: Props) {
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose() }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add event</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit event' : 'Add event'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
@@ -120,7 +153,7 @@ export function EventModal({ open, onClose, onAdd, userId, today }: Props) {
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-              {saving ? 'Saving…' : 'Add event'}
+              {saving ? 'Saving…' : isEditing ? 'Save changes' : 'Add event'}
             </Button>
           </DialogFooter>
         </form>
