@@ -4,7 +4,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "mcp__supabase__get_project_url",
       "mcp__supabase__get_publishable_keys",
-      "Bash(cd \"C:\\\\Users\\\\mslad\\\\Documents\\\\KRBI-Saas\\\\KRBI\" && npm run dev 2>&1)"
+      "Bash(cd \"C:\\\\Users\\\\mslad\\\\Documents\\\\KRBI-Saas\\\\KRBI\" && npm run dev 2>&1)",
+      "mcp__supabase__list_tables"
     ]
   },
   "enableAllProjectMcpServers": true,

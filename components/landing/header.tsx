@@ -27,7 +27,11 @@ export function Header() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? '??'
+  const firstName = user?.user_metadata?.first_name
+  const lastName = user?.user_metadata?.last_name
+  const initials = firstName && lastName
+    ? `${firstName[0]}${lastName[0]}`.toUpperCase()
+    : user?.email?.slice(0, 2).toUpperCase() ?? '??'
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -59,6 +63,9 @@ export function Header() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/account">Account</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/logout">Logout</Link>
                 </DropdownMenuItem>
